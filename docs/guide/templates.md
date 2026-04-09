@@ -28,7 +28,6 @@
 - 使用 CSS Modules 或 Tailwind
 
 ### 文件组织
-```
 src/
 ├── components/     # UI 组件
 │   ├── common/     # 通用组件
@@ -39,7 +38,6 @@ src/
 ├── api/            # API 调用
 ├── stores/         # Zustand stores
 └── pages/          # 页面组件
-```
 
 ### 命名规范
 - 组件: PascalCase (UserCard.tsx)
@@ -62,13 +60,11 @@ src/
 - refactor/xxx
 
 ### Commit 格式
-```
 <type>(<scope>): <subject>
 
 feat(auth): 添加用户登录功能
 fix(api): 修复订单查询错误
 docs(readme): 更新使用文档
-```
 
 ### 类型
 - feat: 新功能
@@ -91,8 +87,6 @@ docs(readme): 更新使用文档
 
 ---
 
-[default]
-
 role: 经验丰富的 React 全栈工程师
 expertise:
   - React 18
@@ -105,28 +99,6 @@ workingStyle:
   - 编写测试
   - 实现功能
   - 代码审查
-
----
-
-[specialist:frontend]
-
-role: React 前端专家
-focus:
-  - 组件设计
-  - 状态管理
-  - 性能优化
-  - 用户体验
-
----
-
-[specialist:reviewer]
-
-role: 代码审查专家
-reviewCriteria:
-  - React 最佳实践
-  - TypeScript 类型安全
-  - 性能考虑
-  - 可访问性
 ```
 
 ## Node.js 后端项目模板
@@ -155,13 +127,11 @@ reviewCriteria:
 - 统一响应格式
 
 ### 响应格式
-```json
 {
   "success": true,
   "data": {},
   "error": null
 }
-```
 
 ### 错误码
 - 400: 参数错误
@@ -171,17 +141,15 @@ reviewCriteria:
 - 500: 服务器错误
 
 ### 目录结构
-```
 src/
 ├── controllers/    # 控制器
-├── services/        # 业务逻辑
-├── repositories/    # 数据访问
-├── models/          # 数据模型
-├── middlewares/     # 中间件
+├── services/       # 业务逻辑
+├── repositories/   # 数据访问
+├── models/         # 数据模型
+├── middlewares/    # 中间件
 ├── routes/         # 路由
-├── utils/          # 工具
-└── types/          # 类型定义
-```
+├── utils/           # 工具
+└── types/           # 类型定义
 
 ## 数据库规范
 - 表名: snake_case 复数 (users, orders)
@@ -201,22 +169,6 @@ src/
 - 单元测试覆盖率 > 80%
 - 集成测试覆盖 API 端点
 - 使用 Jest
-
----
-
-[default]
-
-role: Node.js 后端工程师
-expertise:
-  - Express
-  - PostgreSQL
-  - RESTful API
-  - 数据库设计
-
-workingStyle:
-  - API 优先设计
-  - 测试驱动开发
-  - 错误处理完善
 ```
 
 ## 全栈项目模板
@@ -245,7 +197,6 @@ workingStyle:
 - GitHub Actions
 
 ## 项目结构
-```
 /
 ├── client/          # 前端代码
 ├── server/          # 后端代码
@@ -253,7 +204,6 @@ workingStyle:
 ├── infra/           # 基础设施
 ├── docker-compose.yml
 └── CLAUDE.md
-```
 
 ## 工作流程
 
@@ -269,21 +219,6 @@ workingStyle:
 2. 实现后端
 3. 实现前端
 4. 端到端测试
-
----
-
-[default]
-
-role: 全栈开发工程师
-expertise:
-  - React
-  - Node.js
-  - TypeScript
-  - 数据库设计
-
-constraints:
-  - 前后端类型同步
-  - 共享类型在 shared/
 ```
 
 ## Python 项目模板
@@ -311,26 +246,13 @@ constraints:
 - 常量: UPPER_SNAKE_CASE
 
 ### 项目结构
-```
 src/
 ├── models/         # 数据模型
 ├── schemas/        # Pydantic schemas
 ├── api/            # API 路由
 ├── services/       # 业务逻辑
 ├── repositories/   # 数据访问
-└── core/          # 核心配置
-```
-
----
-
-[default]
-
-role: Python 后端工程师
-expertise:
-  - FastAPI
-  - PostgreSQL
-  - Docker
-  - 类型提示
+└── core/           # 核心配置
 ```
 
 ## 小型脚本项目模板
@@ -372,17 +294,16 @@ expertise:
 - 技术栈: Node.js, Commander.js
 
 ## 使用方法
-```bash
 mycli [command] [options]
 
 Commands:
   start     启动服务
-  stop      停止服务
-  status    查看状态
-  config    配置管理
+  stop     停止服务
+  status   查看状态
+  config   配置管理
 
 Options:
-  --help    显示帮助
+  --help   显示帮助
   --version 显示版本
 ```
 
@@ -397,17 +318,10 @@ Options:
 - 技术栈: VitePress, Markdown
 
 ## 内容结构
-```
 docs/
 ├── guide/          # 指南
 ├── api/            # API 文档
 └── index.md        # 首页
-```
-
-## 规范
-- Markdown 文件使用中文
-- 图片放在 public/
-- 代码块标注语言
 ```
 
 ## 使用模板
@@ -422,80 +336,18 @@ docs/
 
 ### 2. 自定义模板
 
-```bash
-# 复制模板
-cp /path/to/template.md ./CLAUDE.md
-
-# 根据项目调整
-# - 修改项目名称
-# - 调整技术栈
-# - 自定义规则
-# - 添加团队规范
-```
+复制模板并根据项目调整：
+- 修改项目名称
+- 调整技术栈
+- 自定义规则
+- 添加团队规范
 
 ### 3. 持续更新
 
-```markdown
-# 定期审查
-- CLAUDE.md 配置是否还合适？
+定期审查 CLAUDE.md 配置：
+- 是否还合适？
 - 需要添加新的规范吗？
 - 移除不适用的规则
-```
-
-## CLAUDE.md 片段库
-
-### 代码审查片段
-
-```markdown
-[specialist:reviewer]
-
-role: 代码审查专家
-
-reviewSteps: |
-  1. 代码风格检查
-  2. 逻辑正确性
-  3. 类型安全
-  4. 性能考虑
-  5. 安全漏洞
-  6. 测试覆盖
-
-outputFormat: |
-  ## 审查报告
-
-  ### 评分: X/10
-
-  ### 问题列表
-  - [严重] ...
-  - [中等] ...
-  - [轻微] ...
-
-  ### 建议
-  ...
-```
-
-### 数据库设计片段
-
-```markdown
-[agent:db-designer]
-
-role: 数据库架构师
-
-designRules: |
-  - 第三范式 (3NF)
-  - 适当索引
-  - 外键关系清晰
-  - 软删除优先
-
-outputFormat: |
-  ## 表设计
-
-  ### 表名
-  | 字段 | 类型 | 约束 | 说明 |
-  |------|------|------|------|
-
-  ## 索引
-  | 索引名 | 字段 | 类型 |
-```
 
 ::: tip 模板复用
 创建适合自己项目的模板，并在多个项目中复用，可以快速建立一致的编码规范和工作流程。
