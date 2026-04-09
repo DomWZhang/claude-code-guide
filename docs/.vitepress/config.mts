@@ -105,7 +105,7 @@ export default defineConfig({
     },
 
     editLink: {
-      pattern: 'https://github.com/yourusername/claude-code-guide/edit/main/docs/:path',
+      pattern: 'https://github.com/DomWZhang/claude-code-guide/edit/main/docs/:path',
       text: '在 GitHub 上编辑此页面'
     },
 
@@ -117,7 +117,7 @@ export default defineConfig({
     },
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/yourusername/claude-code-guide' }
+      { icon: 'github', link: 'https://github.com/DomWZhang/claude-code-guide' }
     ],
 
     footer: {
@@ -147,6 +147,6 @@ export default defineConfig({
   },
 
   sitemap: {
-    hostname: 'https://yourusername.github.io/claude-code-guide'
+    hostname: 'https://DomWZhang.github.io/claude-code-guide'
   }
 })
