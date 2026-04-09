@@ -42,7 +42,3 @@ features:
     title: 配置与定制
     details: 深度定制 CLAUDE.md、settings.json，打造完全属于你的 AI 编程环境
 ---
-
-<script setup>
-import HomePageHero from './.vitepress/theme/components/HomePageHero.vue'
-</script>
