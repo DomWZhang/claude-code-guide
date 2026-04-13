@@ -4,6 +4,7 @@ export default defineConfig({
   title: 'Claude Code 完全指南',
   description: '掌握 Claude Code 的完整教程，包括 rules、agents、MCP、hooks 等核心概念',
   lang: 'zh-CN',
+  base: '/claude-code-guide/',
   cleanUrls: true,
   lastUpdated: true,
 
