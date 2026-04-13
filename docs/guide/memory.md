@@ -1,497 +1,301 @@
 # Memory 系统
 
-Claude Code 的 Memory 系统让你能够跨会话记住项目上下文、用户偏好和重要信息。
+Claude Code 的 Memory 系统让你能够跨会话记住项目上下文、用户偏好和重要信息，无需每次都重复说明。
 
 ## Memory 概述
 
-Claude Code 有两级记忆系统：
+Claude Code 的记忆系统分为三层：
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                   Session Memory                     │
-│            (当前会话有效，退出后清除)                  │
-└─────────────────────────────────────────────────────┘
-                           ↕
-┌─────────────────────────────────────────────────────┐
-│                  Persistent Memory                   │
-│            (持久化，跨会话有效)                      │
-└─────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────┐
+│  Session Memory (会话记忆)                                  │
+│  当前会话有效，包含对话历史和工具调用结果                     │
+└────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌────────────────────────────────────────────────────────────┐
+│  Project Memory (项目记忆)                                  │
+│  存储在 ~/.claude/projects/<project>/                      │
+│  仅在特定项目会话中可用                                     │
+└────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌────────────────────────────────────────────────────────────┐
+│  User Memory (用户记忆)                                    │
+│  存储在 ~/.claude/memory/                                  │
+│  跨所有项目和会话永久有效                                   │
+└────────────────────────────────────────────────────────────┘
 ```
 
-## 记忆类型
+三层记忆相互补充，确保 Claude 始终拥有完成任务所需的上下文。
 
-### 1. 会话记忆 (Session Memory)
+## 自动记忆
 
-当前会话内的上下文：
+Claude Code 在以下场景会自动记忆：
 
-```
-启动 Claude Code
-    ↓
-加载 CLAUDE.md
-    ↓
-加载项目文件
-    ↓
-对话积累上下文
-    ↓
-退出 Claude Code
-    ↓
-会话结束，上下文清除
-```
+| 触发时机 | 记忆内容 | 存储位置 |
+|----------|----------|----------|
+| 项目首次加载 | 项目结构、技术栈 | Project Memory |
+| CLAUDE.md 变更 | 配置更新 | Project Memory |
+| 用户纠正 | 偏好、风格偏好 | User Memory |
+| 任务完成 | 解决的问题、方案 | Project Memory |
+| 习惯性操作 | 常用命令、工作流 | User Memory |
 
-### 2. 项目记忆 (Project Memory)
+### 自动记忆的内容
 
-持久化在 `.claude/` 目录：
+Claude 自动记住：
+- **项目结构**：目录组织、主要模块
+- **技术栈**：框架、库、语言版本
+- **代码风格**：命名规范、格式约定
+- **工作流偏好**：测试命令、部署方式
+- **解决过的问题**：Bug 和修复方案
+- **用户偏好**：语言偏好（中文/英文）、响应风格
 
-```
-~/.claude/
-├── memory/           # 全局记忆
-├── projects/         # 项目记忆
-│   └── my-project/
-│       ├── context.md
-│       ├── preferences.md
-│       └── history.md
-└── mcp.json         # MCP 配置
-```
+### 控制自动记忆
 
-### 3. 用户记忆 (User Memory)
+通过 `~/.claude/settings.json` 可以调整自动记忆行为：
 
-存储在用户目录：
-
-```
-~/.claude/memory/
-├── user.md          # 用户偏好
-├── expertise.md     # 技术栈偏好
-└── patterns.md      # 代码模式偏好
+```json
+{
+  "autoMemory": {
+    "enabled": true,
+    "rememberProjectStructure": true,
+    "rememberCodeStyle": true,
+    "rememberUserPreferences": true
+  }
+}
 ```
 
-## 使用 Memory
+## 手动记忆
 
-### 自动记忆
+### 记住项目信息
 
-Claude Code 自动记住：
-
-- 项目结构
-- 技术栈
-- 代码风格
-- 最近的修改
-- 解决过的问题
-
-### 手动记忆
+在对话中直接告诉 Claude 需要记住的内容：
 
 ```
-记住：此项目使用 pnpm 作为包管理器
+记住：这个项目使用 pnpm 作为包管理器
 ```
 
 ```
-记住：用户偏好中文回复
+记住：用户偏好中文回复所有内容
 ```
 
 ```
-记住：这个模块的测试文件放在 __tests__ 目录下
+记住：测试文件放在 __tests__ 目录下，命名格式为 *.test.ts
+```
+
+```
+记住：这个模块的数据库连接配置在 src/config/database.ts
+```
+
+### 记住用户偏好
+
+```
+记住：我喜欢简洁的代码风格，不要过度注释
+```
+
+```
+记住：每次修改后主动运行测试验证
+```
+
+```
+记住：API 响应格式统一为 { success, data, error }
 ```
 
 ### 记忆查询
 
 ```
-之前记住的这个项目的数据库配置是什么？
+之前记住的项目数据库配置是什么？
 ```
 
 ```
-我的代码风格偏好是什么？
+我之前设置的技术栈偏好是什么？
 ```
 
-## Memory 文件结构
-
-### 项目记忆目录
-
 ```
-.claude/
-└── memory/
-    ├── project-overview.md    # 项目概述
-    ├── architecture.md       # 架构说明
-    ├── conventions.md        # 约定俗成
-    ├── decisions.md          # 技术决策记录
-    └── progress.md           # 开发进度
+这个项目的代码风格规范是什么？
 ```
 
-### 示例文件
+### 忘记/更新记忆
 
-#### project-overview.md
+```
+忘记之前的 pnpm 偏好，改用 npm
+```
+
+```
+更新记忆：这个项目现在使用 yarn 而不是 pnpm
+```
+
+## 记忆存储位置
+
+### 项目记忆
+
+每个项目的记忆存储在：
+
+```
+~/.claude/projects/<project-path>/
+├── memory.json       # 记忆数据（JSON 格式）
+├── preferences.json  # 项目偏好
+└── history.json     # 项目历史
+```
+
+其中 `<project-path>` 是项目目录路径的哈希值。
+
+### 用户记忆
+
+全局用户记忆存储在：
+
+```
+~/.claude/memory/
+├── user.json         # 用户基本信息
+├── expertise.json   # 技术栈偏好
+├── patterns.json     # 代码模式偏好
+└── habits.json       # 使用习惯
+```
+
+### 查看和管理记忆
+
+Claude Code 提供了 `/memory` slash 命令：
+
+```
+/memory
+```
+
+```
+/memory list
+```
+
+```
+/memory add <内容>
+```
+
+```
+/memory remove <id>
+```
+
+```
+/memory clear
+```
+
+## CLAUDE.md 中的 Memory
+
+CLAUDE.md 是最可靠的记忆载体，优先级最高：
 
 ```markdown
-# 项目概述
+# 我的项目
 
-## 基本信息
-- 项目名称: MyProject
-- 描述: 一个现代化的 Web 应用
-- 启动日期: 2024-01-15
+## 技术栈
+- React 18
+- TypeScript 5.x
+- Node.js 20
 
-## 团队成员
-- 张三 (前端)
-- 李四 (后端)
-- 王五 (DevOps)
-
-## 当前阶段
-- 开发阶段: Beta 测试
-- 目标上线日期: 2024-03-01
-```
-
-#### conventions.md
-
-```markdown
-# 项目约定
-
-## 代码约定
-- TypeScript 严格模式
-- 使用 ESLint + Prettier
+## 代码规范
+- 函数组件 + 命名导出
 - 组件文件最多 200 行
+- 使用 CSS Modules
 
-## Git 约定
-- 分支命名: feature/XXX, fix/XXX
-- Commit 格式: type(scope): message
-- PR 需要至少 1 人 review
-
-## 目录约定
-- src/components: UI 组件
-- src/hooks: 自定义 Hooks
-- src/utils: 工具函数
+## 常用命令
+- npm run dev   # 启动开发服务器
+- npm run build # 构建生产版本
+- npm test      # 运行测试
 ```
 
-#### decisions.md
+Claude Code **每次会话都会自动加载 CLAUDE.md**，确保始终遵循项目规范。
+
+## 记忆最佳实践
+
+### 1. 优先使用 CLAUDE.md
+
+对于项目结构和技术规范，放在 CLAUDE.md 中比口头说明更可靠：
 
 ```markdown
-# 技术决策记录 (ADR)
+# CLAUDE.md
 
-## ADR-001: 选择状态管理
-日期: 2024-01-20
-状态: 已通过
+## 项目说明
+这是一个 Next.js 电商项目
 
-### 决策
-使用 Zustand 作为状态管理方案
+## 技术栈
+- Next.js 14 (App Router)
+- Prisma ORM
+- PostgreSQL
 
-### 理由
-- 轻量级
-- TypeScript 友好
-- 易于测试
-
-### 替代方案
-- Redux: 太复杂
-- MobX: 装饰器语法
-
----
-
-## ADR-002: 选择 UI 框架
-日期: 2024-01-25
-状态: 已通过
-
-### 决策
-使用 Tailwind CSS
-
-### 理由
-- 原子化 CSS
-- 开发效率高
-- 包体积小
+## 规范
+- 组件放在 components/ 目录
+- API 路由放在 app/api/ 目录
 ```
 
-## Memory 操作
+### 2. 用自然语言建立记忆
 
-### 添加记忆
-
-```
-记住这个项目的 API 设计遵循 RESTful 规范
-```
+Claude 理解自然语言，无需特殊格式：
 
 ```
-记住用户偏好使用 async/await 而非 Promise.then
+记住：此项目的 CI/CD 使用 GitHub Actions
+记住：部署前必须运行 npm run build && npm run test
+记住：数据库迁移使用 npm run db:migrate
 ```
 
-### 更新记忆
+### 3. 定期更新记忆
 
 ```
-更新记忆：数据库已从 PostgreSQL 迁移到 MySQL
+这次重构后，模块结构变了，记住：
+- auth 模块移到了 src/features/auth/
+- 用户相关逻辑在 src/entities/user/
 ```
 
-### 查询记忆
-
-```
-查看当前项目的所有记忆
-```
-
-```
-这个项目之前解决了什么问题？
-```
-
-### 删除记忆
-
-```
-忘记之前的数据库配置
-```
-
-```
-移除这个项目的性能优化记忆
-```
-
-## Memory 与上下文
-
-### 上下文加载顺序
-
-```
-1. CLAUDE.md (最高优先级)
-         ↓
-2. Memory 文件
-         ↓
-3. 项目文件
-         ↓
-4. 用户输入
-```
-
-### 上下文限制
-
-```
-上下文窗口: 1M tokens
-    ↓
-已使用: 800K tokens
-    ↓
-Claude 自动压缩旧内容
-    ↓
-保留关键 Memory
-```
-
-## 高级 Memory 功能
-
-### 结构化记忆
-
-```markdown
-# 用户偏好
-
-## 技术偏好
-- 语言: TypeScript, Python
-- 框架: React, FastAPI
-- 工具: Vite, Docker
-
-## 沟通偏好
-- 语言: 中文
-- 详细程度: 详细
-- 回复格式: Markdown
-```
-
-### 关联记忆
-
-```markdown
-# 相关记忆链接
-
-## 相关文档
-- 设计文档: /docs/design.md
-- API 文档: /docs/api.md
-- 部署文档: /docs/deploy.md
-
-## 相关决策
-- ADR-001: 状态管理选择
-- ADR-002: UI 框架选择
-```
-
-### 记忆标签
-
-```markdown
-# 标签: #前端 #React #性能
-
-这个组件存在性能问题，需要使用 React.memo 优化。
-```
-
-## Memory 最佳实践
-
-### 1. 有组织的记忆
-
-```
-✅ 按主题分类
-✅ 使用一致的命名
-✅ 定期清理无用记忆
-
-❌ 混乱的记忆文件
-❌ 过时的信息
-```
-
-### 2. 及时更新
-
-```
-✅ 新决策后更新
-✅ 问题解决后记录
-✅ 项目变化时同步
-
-❌ 忘记更新
-❌ 过时信息
-```
-
-### 3. 相关性优先
-
-```
-✅ 记住重要信息
-✅ 记住常用模式
-✅ 记住用户偏好
-
-❌ 记住一切
-❌ 无关紧要的细节
-```
-
-### 4. 版本控制
-
-```markdown
-# 记忆文件应该纳入版本控制
-git add .claude/memory/
-git commit -m "docs: 添加项目记忆"
-```
-
-## 记忆清理
-
-### 手动清理
-
-```
-/forget [topic]
-```
-
-### 自动清理
-
-Claude Code 会自动清理：
-- 重复的记忆
-- 过时的信息
-- 与当前项目无关的内容
-
-### 完整重置
-
-```
-/reset-memory
-```
-
-## Memory 与 CLAUDE.md
-
-### CLAUDE.md 中的 Memory 配置
-
-```markdown
-# 项目配置
-
-## Memory 设置
-memory:
-  autoLoad: true           # 自动加载记忆
-  autoSave: true           # 自动保存新记忆
-  maxAge: 30d             # 记忆有效期
-  syncMode: git           # 与 Git 同步
-
-## 需要记住的内容
-remember:
-  - 项目架构
-  - 代码规范
-  - 团队成员
-  - 技术决策
-  - 重要上下文
-```
-
-### 排除的内容
-
-```markdown
-## 不需要记住
-excludeFromMemory:
-  - 临时文件
-  - 调试输出
-  - 个人信息
-  - 敏感数据
-```
-
-## 跨项目记忆
-
-### 全局记忆
-
-在 `~/.claude/memory/` 中创建全局记忆：
-
-```markdown
-# 全局记忆
-
-## 我的技术栈
-- 前端: React, Vue, TypeScript
-- 后端: Node.js, Python, Go
-- 数据库: PostgreSQL, MongoDB
-- DevOps: Docker, Kubernetes
-
-## 工作习惯
-- 喜欢先写测试
-- 使用 Git Flow
-- 偏好详细文档
-```
-
-### 项目特定记忆
-
-在 `.claude/memory/` 中创建项目记忆：
-
-```markdown
-# 本项目特定信息
-```
-
-## 记忆同步
-
-### Git 同步
-
-```bash
-# 在 .gitignore 中排除
-.claude/memory/secrets/
-
-# 但保留常规记忆
-.gitignore
-!.claude/memory/important.md
-```
-
-### 多设备同步
-
-```
-设备 A: 修改记忆
-    ↓
-推送到 Git
-    ↓
-设备 B: 拉取
-    ↓
-同步完成
-```
-
-## 记忆隐私
-
-### 敏感信息处理
-
-```markdown
-# 记住但不存储敏感信息
-记住：
-- 使用环境变量存储密钥
-- .env 文件不提交到 Git
-- 定期轮换密钥
-
-不要记住：
-- 具体的密钥值
-- 数据库密码
-- API Token
-```
-
-### 安全建议
-
-```
-✅ 使用环境变量
-✅ 使用密钥管理服务
-✅ 定期清理敏感记忆
-
-❌ 硬编码密码
-❌ 记忆包含密钥
-```
+### 4. 区分项目和用户记忆
+
+| 内容类型 | 存储方式 |
+|----------|----------|
+| 项目特有的规范 | CLAUDE.md |
+| 项目特有的上下文 | 手动记忆（Claude 存储） |
+| 个人使用偏好 | 手动记忆（Claude 存储） |
+| 技术栈偏好 | 手动记忆（Claude 存储） |
 
 ## 常见问题
 
-### Q: Memory 会占用上下文空间吗？
+### Q: 记忆存储在哪里？
 
-A: 是的，但 Claude Code 会智能管理，只在需要时加载相关记忆。
+- **Project Memory**：`~/.claude/projects/<hash>/`
+- **User Memory**：`~/.claude/memory/`
+- **Sessions**：`~/.claude/sessions/`
+- **File History**：`~/.claude/file-history/`
 
-### Q: 如何确保记忆准确？
+### Q: 如何清除项目记忆？
 
-A: 定期审查和更新记忆，使用 `/remember` 命令查看当前记忆。
+```
+/memory clear
+```
 
-### Q: 可以在多个项目间共享记忆吗？
+或删除对应目录：
 
-A: 可以，在全局 `~/.claude/memory/` 中创建跨项目共享的记忆。
+```bash
+rm -rf ~/.claude/projects/<project-hash>/
+```
 
-::: tip 实践建议
-养成定期整理记忆的习惯。好的 Memory 系统可以大大提升 Claude Code 的效率和准确性。
-:::
+### Q: 记忆会影响上下文吗？
+
+会。每次记忆增加上下文负担。建议：
+- CLAUDE.md 控制在 5KB 以内
+- 手动记忆不要超过 10 条
+- 定期 `/compact` 清理冗余
+
+### Q: 不同机器的记忆同步吗？
+
+不自动同步。记忆存储在本地。如需同步，可以使用：
+- Git 仓库中的 CLAUDE.md（推荐）
+- 云盘同步 `~/.claude/` 目录
+- `.mcp.json` 中的 MCP 服务器
+
+### Q: 如何让 Claude 记住 API Key 等敏感信息？
+
+**不要**将敏感信息存储在记忆或 CLAUDE.md 中。使用环境变量：
+
+```bash
+export OPENAI_API_KEY=sk-...
+```
+
+然后在 Claude 中：
+
+```
+记住：API Key 使用环境变量 OPENAI_API_KEY
+```

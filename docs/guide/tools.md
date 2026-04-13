@@ -1,526 +1,438 @@
-# 工具列表
+# 工具系统
 
-Claude Code 提供了丰富的内置工具，用于与文件系统、Git、Shell 等交互。
+Claude Code 的工具系统是其与外部环境交互的核心机制。理解工具的工作原理，有助于你更精确地控制 Claude 的行为。
 
 ## 工具概览
 
+Claude Code 内置的工具分为以下几类：
+
 ```
-┌─────────────────────────────────────────────────────┐
-│                   Claude Code                        │
-├─────────────────────────────────────────────────────┤
-│  📁 文件工具    │  🔧 Shell 工具  │  🔍 搜索工具    │
-│  Read          │  Bash          │  Grep           │
-│  Write         │  Exec          │  Glob           │
-│  Edit          │  Spawn         │  GrepContext    │
-│  Glob          │                │                 │
-├─────────────────────────────────────────────────────┤
-│  🔀 Git 工具    │  🌐 网络工具    │  📊 数据工具    │
-│  GitStatus     │  WebFetch      │  TodoList      │
-│  GitLog        │  WebSearch     │  NotebookEdit  │
-│  GitDiff       │                │                 │
-│  GitBranch     │                │                 │
-└─────────────────────────────────────────────────────┘
-```
-
-## 文件系统工具
-
-### 1. Read - 读取文件
-
-**功能**: 读取文件内容
-
-**签名**:
-```typescript
-Read(file_path: string, limit?: number, offset?: number)
+┌────────────────────────────────────────────────────────────┐
+│                     内置工具                                 │
+├──────────────────┬─────────────────┬───────────────────────┤
+│  📁 文件操作     │  🔧 Shell 命令   │  🔍 搜索与查找        │
+│  Read            │  Bash           │  Grep                 │
+│  Write           │                 │  Glob                 │
+│  Edit            │                 │                       │
+├──────────────────┼─────────────────┼───────────────────────┤
+│  ✏️ 任务管理     │  🌐 网络工具     │  📓 特殊工具          │
+│  TodoWrite       │  WebSearch      │  NotebookEdit         │
+│  AskUserQuestion │  WebFetch       │  ScheduleWakeup       │
+│                  │                 │  TaskStop             │
+│                  │                 │  TaskOutput           │
+└──────────────────┴─────────────────┴───────────────────────┘
 ```
 
-**示例**:
-```
-读取 /src/app.ts 的前 100 行
-```
+## 文件操作工具
 
-```typescript
-// 读取整个文件
-Read({ file_path: "/src/index.ts" })
+### Read — 读取文件
 
-// 读取指定行范围
-Read({ file_path: "/src/app.ts", limit: 100, offset: 0 })
+**功能**：读取文件内容，支持行范围选择
 
-// 读取 PDF
-Read({ file_path: "/docs/guide.pdf", pages: "1-5" })
-
-// 读取图片
-Read({ file_path: "/assets/logo.png" })
+```json
+Read({
+  file_path: string,
+  limit?: number,
+  offset?: number
+})
 ```
 
-**参数说明**:
-- `file_path`: 文件路径（绝对或相对路径）
-- `limit`: 最大行数
-- `offset`: 起始行号
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `file_path` | string | 文件路径（绝对或相对） |
+| `limit` | number | 最多读取的行数 |
+| `offset` | number | 起始行号（0 为文件开头） |
 
-### 2. Write - 写入文件
+**使用示例**：
 
-**功能**: 创建或覆盖文件
-
-**签名**:
-```typescript
-Write(file_path: string, content: string)
+```
+读取 src/app.ts 的前 100 行
+读取 src/app.ts 的第 50-100 行
+读取 src/app.ts 全部内容
 ```
 
-**示例**:
+Claude Code 也能处理图片和 PDF：
+
+```
+读取 /docs/screenshot.png
+读取 /docs/guide.pdf 的第 1-10 页
+```
+
+### Write — 写入文件
+
+**功能**：创建新文件或覆盖现有文件
+
+```json
+Write({
+  file_path: string,
+  content: string
+})
+```
+
+**使用示例**：
+
 ```
 创建 src/types/user.ts
 ```
 
-```typescript
-Write({
-  file_path: "/src/types/user.ts",
-  content: `export interface User {
-  id: string
-  name: string
-  email: string
-  createdAt: Date
-}
+Claude 会提示文件不存在，确认后创建。
 
-export interface UserProfile extends User {
-  bio: string
-  avatar: string
-}
-`
-})
-```
+**⚠️ 注意**：`Write` 会覆盖现有文件！编辑现有文件请使用 `Edit`。
 
-**注意**: 会覆盖现有文件！
+### Edit — 编辑文件
 
-### 3. Edit - 编辑文件
+**功能**：精确替换文件中的特定文本
 
-**功能**: 对文件进行精确编辑
-
-**签名**:
-```typescript
-Edit(file_path: string, old_string: string, new_string: string)
-```
-
-**示例**:
-```
-编辑 src/utils.ts，将 getData 改名为 fetchData
-```
-
-```typescript
+```json
 Edit({
-  file_path: "/src/utils.ts",
-  old_string: "function getData() {",
-  new_string: "function fetchData() {"
+  file_path: string,
+  old_string: string,
+  new_string: string
 })
 ```
 
-**多行编辑**:
-```typescript
-Edit({
-  file_path: "/src/app.ts",
-  old_string: `function oldFunction() {
-  console.log("old")
-  return null
-}`,
-  new_string: `function newFunction() {
-  console.log("new")
-  return { success: true }
-}`
-})
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `file_path` | string | 文件路径 |
+| `old_string` | string | 要替换的原文（必须精确匹配） |
+| `new_string` | string | 替换后的新文本 |
+
+**使用示例**：
+
+```
+将 src/config.ts 中的 API_URL 改为 https://api.example.com/v2
 ```
 
-### 4. Glob - 文件搜索
-
-**功能**: 搜索匹配的文件
-
-**签名**:
-```typescript
-Glob(pattern: string, options?: { path?: string })
+```
+在 src/app.ts 的 handleSubmit 函数末尾添加错误处理
 ```
 
-**示例**:
-```
-找出 src 下所有 TypeScript 文件
-```
+**使用技巧**：
+- `old_string` 必须精确匹配，包括缩进和换行
+- 如果文件中有多处相同内容，提供更多上下文
+- 优先匹配唯一性高的片段
 
-```typescript
-Glob({ pattern: "src/**/*.ts" })
-Glob({ pattern: "src/**/*.tsx" })
-Glob({ pattern: "**/*.test.ts" })
-Glob({ pattern: "**/*.json", path: "/config" })
-```
+### Glob — 模式匹配
 
-**常用模式**:
-- `*` - 匹配任意字符（不含目录分隔符）
-- `**` - 匹配任意字符（含目录分隔符）
-- `?` - 匹配单个字符
-- `[abc]` - 匹配字符集合
+**功能**：按模式查找文件
 
-### 5. Bash - 执行命令
-
-**功能**: 执行 Shell 命令
-
-**签名**:
-```typescript
-Bash(command: string, options?: { timeout?: number })
-```
-
-**示例**:
-```
-运行 npm install
-```
-
-```typescript
-Bash({ command: "npm install" })
-Bash({ command: "git status" })
-Bash({ command: "npm run build", timeout: 300 })
-Bash({ command: "find . -name '*.tmp' -delete" })
-```
-
-**常用命令**:
-```typescript
-// 包管理
-Bash({ command: "npm install" })
-Bash({ command: "pnpm add react" })
-Bash({ command: "yarn add -D typescript" })
-
-// Git
-Bash({ command: "git status" })
-Bash({ command: "git log --oneline -10" })
-Bash({ command: "git diff" })
-
-// 文件操作
-Bash({ command: "mkdir -p src/components" })
-Bash({ command: "rm -rf dist" })
-Bash({ command: "cp source.js dest.js" })
-
-// 开发
-Bash({ command: "npm run dev" })
-Bash({ command: "npm test" })
-Bash({ command: "npm run build" })
-```
-
-### 6. Grep - 内容搜索
-
-**功能**: 在文件中搜索文本
-
-**签名**:
-```typescript
-Grep(pattern: string, options?: {
+```json
+Glob({
+  pattern: string,
   path?: string
-  context?: number
-  output_mode?: "content" | "files_with_matches"
 })
 ```
 
-**示例**:
+**使用示例**：
+
 ```
-在 src 目录搜索 useState
+列出 src/components 目录下的所有 .vue 文件
 ```
 
-```typescript
+```
+查找项目中所有的 test 文件
+```
+
+```
+找到 src 目录下包含 "useAuth" 的文件
+```
+
+### Grep — 内容搜索
+
+**功能**：在文件中搜索匹配的内容
+
+```json
 Grep({
-  pattern: "useState",
-  path: "src",
-  output_mode: "content"
-})
-
-// 搜索并显示上下文
-Grep({
-  pattern: "TODO",
-  path: "src",
-  context: 3,
-  output_mode: "content"
-})
-
-// 只返回文件名
-Grep({
-  pattern: "React.memo",
-  path: "src",
-  output_mode: "files_with_matches"
+  pattern: string,
+  path?: string,
+  output_mode?: "content" | "files_with_matches" | "count"
 })
 ```
 
-**正则搜索**:
-```typescript
-Grep({
-  pattern: "\\d{3}-\\d{4}",  // 匹配电话号码
-  path: "src",
-  output_mode: "content"
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `pattern` | string | 正则表达式或普通字符串 |
+| `path` | string | 搜索路径 |
+| `output_mode` | string | 输出模式 |
+
+**使用示例**：
+
+```
+搜索 src 中所有包含 "TODO" 的行
+```
+
+```
+找到所有使用 useState 的 React 组件
+```
+
+```
+统计 src/components 目录下 .tsx 文件数量
+```
+
+## Shell 工具
+
+### Bash — 执行 Shell 命令
+
+**功能**：在终端执行任意 Shell 命令
+
+```json
+Bash({
+  command: string,
+  timeout?: number,
+  description?: string
 })
 ```
 
-## Git 工具
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `command` | string | 要执行的命令 |
+| `timeout` | number | 超时时间（毫秒） |
+| `description` | string | 命令描述（可选） |
 
-### 7. GitStatus - Git 状态
+**使用示例**：
 
-```typescript
-GitStatus()
+```
+运行 npm test 检查测试是否通过
 ```
 
-**示例**:
 ```
-查看当前 Git 状态
-```
-
-```typescript
-GitStatus()
+执行 npm run build 构建项目
 ```
 
-**输出**:
 ```
-On branch main
-Changes not staged for commit:
-  modified:   src/app.ts
-  modified:   src/utils.ts
-Untracked files:
-  src/new-file.ts
+运行 TypeScript 类型检查：npx tsc --noEmit
 ```
 
-### 8. GitLog - Git 历史
-
-```typescript
-GitLog({ path?: string, max?: number })
-```
-
-**示例**:
-```
-查看最近的 10 条提交记录
-```
-
-```typescript
-GitLog({ max: 10 })
-GitLog({ path: "src/app.ts", max: 5 })
-```
-
-### 9. GitDiff - 文件差异
-
-```typescript
-GitDiff({ file?: string, staged?: boolean })
-```
-
-**示例**:
-```
-查看当前修改的差异
-```
-
-```typescript
-GitDiff()
-GitDiff({ file: "src/app.ts" })
-GitDiff({ staged: true })
-```
-
-### 10. GitBranch - 分支管理
-
-```typescript
-GitBranch(options?: { create?: string, delete?: string })
-```
-
-**示例**:
-```typescript
-GitBranch()  // 列出所有分支
-GitBranch({ create: "feature/new-feature" })
-GitBranch({ delete: "feature/old-feature" })
-```
+**安全机制**：Claude Code 对危险命令（如 `rm -rf`、`dd`）有内置警告。
 
 ## 网络工具
 
-### 11. WebFetch - 获取网页
+### WebSearch — 网络搜索
 
-**功能**: 获取并分析网页内容
-
-**签名**:
-```typescript
-WebFetch(url: string, prompt?: string)
-```
-
-**示例**:
-```
-获取 React 官方文档
-```
-
-```typescript
-WebFetch({
-  url: "https://react.dev",
-  prompt: "提取文档中关于 Hooks 的介绍"
-})
-```
-
-### 12. WebSearch - 网络搜索
-
-**功能**: 搜索网络信息
-
-**签名**:
-```typescript
-WebSearch(query: string, options?: { numResults?: number })
-```
-
-**示例**:
-```
-搜索最新的 React 文档
-```
-
-```typescript
-WebSearch({ query: "React 18 new features 2024" })
-WebSearch({ query: "TypeScript 5 tutorial", numResults: 5 })
-```
-
-## 代码工具
-
-### 13. TodoWrite - 任务管理
-
-```typescript
-TodoWrite(operations: {
-  create?: { subject: string, description?: string }[],
-  update?: { taskId: string, status: "in_progress" | "completed" }[],
-  delete?: { taskId: string }[]
-})
-```
-
-**示例**:
-```typescript
-TodoWrite({
-  create: [
-    { subject: "实现用户登录功能", description: "使用 JWT 认证" },
-    { subject: "编写单元测试" }
-  ]
-})
-
-TodoWrite({
-  update: [{ taskId: "1", status: "completed" }]
-})
-```
-
-### 14. TodoList - 查看任务
-
-```typescript
-TodoList()
-```
-
-**示例**:
-```typescript
-TodoList()
-```
-
-## MCP 工具
-
-通过 MCP 协议连接的工具，可以在配置中启用。
-
-### 常用 MCP 工具
-
-| MCP Server | 工具 | 说明 |
-|------------|------|------|
-| filesystem | read_file, write_file, list_directory | 文件操作 |
-| github | get_repository, create_issue, create_pr | GitHub 操作 |
-| postgres | query, execute, list_tables | 数据库操作 |
-| slack | post_message, list_channels | Slack 通知 |
-
-## 工具权限
-
-### 配置文件
+**功能**：执行网络搜索
 
 ```json
-{
-  "tools": {
-    "Bash": {
-      "allowedCommands": ["npm *", "git *", "pnpm *"],
-      "deniedCommands": ["rm -rf /*", "dd *"]
-    },
-    "Write": {
-      "allowedPaths": ["src/**", "tests/**"],
-      "deniedPaths": ["**/node_modules/**"]
-    }
-  }
-}
+WebSearch({
+  query: string
+})
 ```
 
-## 工具使用技巧
-
-### 1. 组合使用
-
-```typescript
-// 读取多个文件
-Read({ file_path: "/src/a.ts" })
-Read({ file_path: "/src/b.ts" })
-Read({ file_path: "/src/c.ts" })
-
-// 搜索并读取
-Grep({ pattern: "TODO", output_mode: "files_with_matches" })
-Read({ file_path: "src/todo-file.ts" })
-```
-
-### 2. 批量操作
-
-```typescript
-// 批量读取
-Read({ file_path: "src/component-a.ts" })
-Read({ file_path: "src/component-b.ts" })
-Read({ file_path: "src/component-c.ts" })
-
-// 批量编辑
-Edit({ file_path: "src/a.ts", old: "a", new: "b" })
-Edit({ file_path: "src/b.ts", old: "a", new: "b" })
-```
-
-### 3. 错误处理
-
-```typescript
-// 检查文件是否存在
-Glob({ pattern: "src/**/*.ts" })
-
-// 安全的文件操作
-try {
-  Read({ file_path: "potentially-missing.ts" })
-} catch (error) {
-  console.log("文件不存在，可能需要先创建")
-}
-```
-
-### 4. 性能优化
-
-```typescript
-// ❌ 低效
-Read({ file_path: "file1.ts" })
-Read({ file_path: "file2.ts" })
-Read({ file_path: "file3.ts" })
-
-// ✅ 高效 - 一次读取多个
-Read({ file_path: "file1.ts" })
-Read({ file_path: "file2.ts" })
-Read({ file_path: "file3.ts" })
-// Claude 会智能并行调用
-```
-
-## 工具日志
-
-查看工具调用记录：
+**使用示例**：
 
 ```
-/logs tools
+搜索 "React 18 concurrent mode" 相关信息
+```
+
+```
+搜索最新的 TypeScript 5.x 新特性
+```
+
+### WebFetch — 抓取网页
+
+**功能**：获取并分析网页内容
+
+```json
+WebFetch({
+  url: string,
+  prompt?: string
+})
+```
+
+**使用示例**：
+
+```
+获取 https://docs.anthropic.com 的内容并总结
+```
+
+```
+读取 https://github.com/anthropic/claude-code 的 README
+```
+
+## 任务管理工具
+
+### TodoWrite — 任务列表
+
+**功能**：创建和管理任务列表
+
+```json
+TodoWrite({
+  todos: Array<{
+    activeForm: string,
+    content: string,
+    status: "in_progress" | "completed" | "pending"
+  }>
+})
+```
+
+**使用示例**：
+
+```
+用 TodoWrite 创建以下任务列表：
+1. 分析数据库 schema
+2. 设计 API 路由
+3. 实现 CRUD 接口
+4. 编写测试
+5. 编写 API 文档
+```
+
+Claude 会自动使用 TodoWrite 跟踪复杂任务的进度。
+
+### AskUserQuestion — 向用户提问
+
+**功能**：在需要用户输入时暂停执行
+
+```json
+AskUserQuestion({
+  questions: Array<{
+    header: string,
+    question: string,
+    options: Array<{ label: string, description?: string }>,
+    multiSelect?: boolean
+  }>
+})
+```
+
+**使用示例**：
+
+当 Claude 需要用户选择时，会使用此工具暂停并显示选项。
+
+## 特殊工具
+
+### NotebookEdit — Jupyter Notebook 编辑
+
+**功能**：编辑 `.ipynb` Jupyter Notebook 文件
+
+```json
+NotebookEdit({
+  notebook_path: string,
+  cell_id?: string,
+  new_source?: string,
+  edit_mode?: "replace" | "insert" | "delete",
+  cell_type?: "code" | "markdown"
+})
+```
+
+### ScheduleWakeup — 定时唤醒
+
+**功能**：设置定时任务提醒
+
+```json
+ScheduleWakeup({
+  delaySeconds: number,
+  prompt: string,
+  reason?: string
+})
+```
+
+### TaskStop — 停止后台任务
+
+**功能**：停止正在运行的后台任务
+
+```json
+TaskStop({
+  task_id: string
+})
+```
+
+### TaskOutput — 获取任务输出
+
+**功能**：获取后台任务的执行结果
+
+```json
+TaskOutput({
+  task_id: string,
+  block?: boolean,
+  timeout?: number
+})
+```
+
+## 工具调用权限
+
+### 权限级别
+
+| 级别 | 工具 | 行为 |
+|------|------|------|
+| **只读** | Read, Glob, Grep, WebSearch, WebFetch | 自动执行，无需确认 |
+| **信息获取** | Bash(git status, ls, cat) | 自动执行 |
+| **修改文件** | Write, Edit, Bash(> file) | 需要确认 |
+| **执行命令** | Bash(npm, git, etc.) | 需要确认 |
+| **危险操作** | Bash(rm, dd, etc.) | 明确警告 |
+
+### 控制工具权限
+
+```bash
+# 仅允许读操作
+claude --allowedTools "Read,Glob,Grep"
+
+# 禁止使用 Bash
+claude --disallowedTools "Bash"
+
+# 仅允许默认工具集
+claude --tools default
+
+# 禁用所有工具
+claude --tools ""
+```
+
+### 权限提示示例
+
+当 Claude 尝试执行需要确认的操作时，会显示：
+
+```
+⚠️ 确认操作
+
+Bash: rm -rf node_modules/
+是否执行？[确认] [拒绝]
+```
+
+## 工具与 MCP
+
+MCP 扩展的工具会添加到工具列表中。查看当前可用的 MCP 工具：
+
+```
+列出当前会话中所有可用的工具
 ```
 
 ## 常见问题
 
-### Q: 工具调用失败？
+### Q: Read 工具的 limit 和 offset 是必填的吗？
 
-A: 检查错误信息，确保：
-- 文件路径正确
-- 权限足够
-- 命令语法正确
+不是。省略两者会读取整个文件。
 
-### Q: 工具权限不足？
+### Q: Edit 和 Write 的区别是什么？
 
-A: 在 `settings.json` 中配置允许的工具和路径。
+- **Edit**：精确替换文件中的部分内容，不影响其他内容
+- **Write**：创建新文件或完全覆盖现有文件
 
-### Q: 如何禁用某个工具？
+### Q: 如何让 Claude 只做读取操作？
 
-```json
-{
-  "tools": {
-    "Bash": { "enabled": false }
-  }
-}
+```bash
+claude --disallowedTools "Write,Edit,Bash"
 ```
 
-::: tip 高效使用
-熟悉每个工具的能力，组合使用可以完成复杂的任务。善用 Glob 和 Grep 进行高效搜索。
-:::
+### Q: 工具调用有超时限制吗？
+
+`Bash` 支持 `timeout` 参数（毫秒）。默认超时取决于操作类型：
+
+| 操作类型 | 默认超时 |
+|----------|----------|
+| 文件读取 | 30s |
+| 文件写入 | 30s |
+| Shell 命令 | 120s（可自定义） |
+| Web 请求 | 60s |
+
+### Q: Claude 如何选择调用哪个工具？
+
+Claude 的工具选择基于：
+1. **任务需求**：需要什么操作
+2. **工具能力**：每个工具能做什么
+3. **权限状态**：哪些工具有执行权限
+4. **效率**：最优的操作序列
+
+你可以通过精确描述来引导工具选择：
+
+```
+✅ "将 src/a.ts 的 handleClick 函数重命名为 onClick"
+✅ "运行 npm test 验证功能"
+❌ "修复这个 bug"（过于笼统）
+```

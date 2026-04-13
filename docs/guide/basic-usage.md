@@ -1,382 +1,537 @@
-# 基础使用：实战导向的工作流
+# 基础使用
 
-本章从实际场景出发，系统讲解 Claude Code 的日常使用技巧、交互模式、文件操作、Git 集成和任务管理。
+本指南覆盖 Claude Code 日常使用中最常见的操作模式：文件操作、Git 管理、会话控制等。所有操作均通过自然语言交互，无需记忆复杂命令。
 
-## 交互模式详解
+## 启动与退出
 
-### 启动与退出
+### 交互模式
 
 ```bash
-# 在当前目录启动
+# 在项目目录中启动
+cd /path/to/project
 claude
 
-# 指定项目目录启动
-claude --cwd /path/to/project
+# 指定 Agent 启动
+claude --agent Explore
 
-# 退出（两种方式）
-/exit
-/bye
+# 指定模型启动
+claude --model sonnet
+
+# 指定任务投入程度
+claude --effort high
 ```
 
-### 两种执行模式对比
-
-| 模式 | 命令 | 特点 | 适用场景 |
-|------|------|------|----------|
-| 交互模式 | `claude` | 持续对话，保留上下文 | 复杂任务、多轮迭代 |
-| 单次模式 | `claude -p "prompt"` | 执行后退出，无状态 | 脚本集成、CI/CD |
-
-**单次模式示例**：
+### 单次执行模式
 
 ```bash
-# 解释代码
-claude -p "解释 src/index.ts 中的 main 函数"
+# 执行单个任务后退出
+claude -p "解释 src/auth/login.ts 中的登录逻辑"
 
-# 生成代码片段
-claude -p "生成一个 React Hook useLocalStorage"
+# 指定输出格式
+claude -p --output-format json "获取 users 表结构"
 
-# 代码审查（输出到文件）
-claude -p "审查 src/auth/login.ts" > review.txt
+# 带预算限制
+claude -p --max-budget-usd 0.05 "生成一个 React useLocalStorage Hook"
+
+# 结构化输出
+claude -p --json-schema '{"type":"object","properties":{"name":{"type":"string"}}}' \
+  "返回一个用户对象"
 ```
 
-## 高效请求技巧
+### 退出交互会话
 
-### 请求结构模板
+输入 `/exit` 或直接按 `Ctrl+C`。
 
-一个高质量的请求应包含：**上下文 + 任务 + 约束 + 输出格式**。
+## 文件操作
 
-```
-[上下文] 这是一个 Next.js 14 + TypeScript 项目，使用 App Router。
-[任务] 在 app/api/auth/route.ts 中实现 POST /api/auth 接口，
-       接收 email 和 password，验证后返回 JWT token。
-[约束] 使用 bcrypt 验证密码，zod 验证输入，
-       错误时返回 401，成功返回 200。
-[输出] 直接输出完整代码，不要解释。
-```
-
-### 请求示例对比
-
-| 类型 | 请求 | Claude 行为 |
-|------|------|-------------|
-| ❌ 模糊 | "修复 bug" | 需要追问，浪费时间 |
-| ✅ 清晰 | "修复 src/api/user.ts 中 getUserById 函数：当传入无效 ID 时应该返回 null 而不是抛出异常" | 直接定位并修复 |
-| ✅ 带范围 | "修改 src/components/ 下所有 .js 文件为 .tsx，并添加类型定义" | 批量处理 |
-| ✅ 带约束 | "重构这个函数，保持原有 API 签名不变，添加错误处理" | 生成兼容代码 |
-
-### 使用文件引用
-
-```
-# 引用具体文件
-分析 src/utils/helpers.ts 中的 formatDate 函数，指出性能问题
-
-# 引用多个文件
-对比 src/api/v1/ 和 src/api/v2/ 中的类型定义差异
-
-# 引用目录
-审查 src/hooks/ 下所有自定义 Hook 的实现质量
-```
-
-## 文件操作实战
+Claude Code 的文件操作通过**自然语言**描述，Claude 自动调用相应工具。
 
 ### 读取文件
 
 ```
-# 基本读取
-读取 package.json
-
-# 指定行范围
-读取 src/app.ts 第 50-100 行
-
-# 读取多个文件
-同时读取 src/types/user.ts 和 src/types/post.ts
-
-# 搜索式读取
-找出所有 export default 的组件
+读取 src/app.ts 的全部内容
 ```
 
-### 创建和编辑
-
 ```
-# 创建新文件
-创建 src/utils/string.ts，包含 capitalize、truncate 函数
-
-# 编辑现有文件
-在 src/index.ts 的第 5 行后添加 console.log('start')
-
-# 批量替换
-将 src/components/ 下所有 Button 组件中的 variant='primary' 替换为 intent='primary'
-
-# 重构
-将 src/utils.ts 中的 getData 重命名为 fetchData，并更新所有引用
+读取 src/app.ts 的前 100 行
 ```
 
-### 删除操作（需确认）
-
 ```
-删除 src/temp/ 下的所有 .log 文件
-
-⚠️ Claude Code 会要求确认：
-> rm src/temp/*.log
-是否继续？(yes/no)
+读取 docs/guide.md 的第 50-100 行
 ```
 
-## 终端命令执行
-
-### 基本命令
-
 ```
-# 包管理
-安装 axios
-运行 npm install
-更新所有依赖到最新版本
-
-# 构建与测试
-运行 npm run build
-执行 npm test -- --watch
-
-# Git 操作（见下一节）
-查看 git status
+列出 src/components 目录下的所有 .vue 文件
 ```
 
-### 命令执行策略
-
-| 命令类型 | 执行方式 | 需要确认 |
-|----------|----------|----------|
-| 只读命令（ls, cat, grep） | 自动执行 | 否 |
-| 包管理（npm install, pip install） | 自动执行 | 否 |
-| 构建测试（npm run build, pytest） | 自动执行 | 否 |
-| 危险命令（rm -rf, git push --force） | 需确认 | 是 |
-| 耗时命令（长时间运行的服务器） | 后台执行 | 需确认 |
-
-### 处理长时间运行命令
-
 ```
-# 启动开发服务器（后台运行）
-npm run dev
-# Claude Code 会在后台运行，你可以继续其他操作
-
-# 查看后台任务
-/tasks
-
-# 停止后台任务
-/task stop <task_id>
+搜索 src 中包含 "useAuth" 的所有文件
 ```
 
-## Git 集成
-
-### 基础操作
+### 写入文件
 
 ```
-# 查看状态
-查看 git status
+创建 src/utils/formatDate.ts
+包含：
+- formatDate(date: Date): string - 返回 YYYY-MM-DD
+- formatDateTime(date: Date): string - 返回 YYYY-MM-DD HH:mm:ss
+```
 
-# 暂存文件
-git add src/ 添加到暂存区
+Claude 会创建文件并写入内容。**注意**：`Write` 操作会覆盖现有文件。
 
-# 提交
-提交当前修改，信息为 "fix: 修复登录验证逻辑"
+### 编辑文件
 
-# 推送
-git push origin main
+```
+在 src/app.ts 的 handleSubmit 函数中添加参数校验
+```
+
+```
+将 src/config.ts 中的 API_URL 改为 https://api.example.com/v2
+```
+
+Claude 使用精确字符串匹配进行编辑，确保只修改指定内容。
+
+### 多文件协作
+
+```
+修改 src/auth/ 下的所有文件，将 User 类型导入改为从 @/types 导入
+```
+
+### 批量文件操作
+
+```
+将 src/pages 下的所有函数组件改为箭头函数形式
+```
+
+## Git 操作
+
+### 查看状态
+
+```
+查看当前的 git 状态
+```
+
+```
+查看最近的 5 次提交
+```
+
+```
+查看当前分支与 main 分支的差异
+```
+
+### 提交更改
+
+```
+提交当前的修改，提交信息为 "feat: 添加用户认证功能"
+```
+
+```
+将 src/ 下的所有修改添加到暂存区并提交
+```
+
+```
+先查看 diff，然后提交
 ```
 
 ### 分支管理
 
 ```
-# 创建分支
-创建新分支 feature/user-profile
-
-# 切换分支
-切换到 develop 分支
-
-# 合并
-将 feature/user-profile 合并到 main
-
-# 删除分支
-删除已合并的 feature/old-feature 分支
+创建并切换到新分支 feat/user-auth
 ```
 
-### 高级 Git 工作流
-
 ```
-# 交互式 rebase
-对最近 3 个提交进行 squash
-
-# 解决冲突
-解决当前分支与 main 的冲突
-
-# 查看历史
-查看最近的提交历史，找出谁修改了 src/auth.ts
-
-# 创建 PR
-创建 Pull Request，标题为 "feat: 添加用户系统"，描述为 "实现了用户注册、登录和资料编辑"
+查看所有远程分支
 ```
 
-## 任务管理与规划
-
-### 复杂任务分解
-
-Claude Code 会自动将复杂任务分解为步骤，并在执行过程中显示进度。
-
-**示例**："从零创建一个 Express + TypeScript 项目"
-
-Claude 的规划：
 ```
-1. 初始化 npm 项目
-2. 安装依赖（express, typescript, @types/express, ts-node, nodemon）
-3. 配置 tsconfig.json
-4. 创建 src/index.ts 入口文件
-5. 添加基础 Express 服务器代码
-6. 配置 package.json scripts
-7. 启动开发服务器验证
+将当前分支合并到 main
 ```
 
-### 中途调整
+### 查看历史
 
 ```
-# 跳过某一步
-跳过步骤 3，直接创建入口文件
-
-# 修改计划
-在步骤 2 中添加 dotenv 依赖
-
-# 回退
-取消刚才的修改，回到之前的状态
+查看 src/app.ts 的提交历史
 ```
 
-### 使用 TodoWrite 跟踪
+```
+查看某个特定提交的修改内容
+```
 
-Claude Code 会自动使用 `TodoWrite` 工具管理任务列表，你可以随时查看进度：
+### 与 PR 协作
+
+```bash
+# 从 PR 恢复会话（交互式选择）
+claude --from-pr
+
+# 指定 PR 编号
+claude --from-pr 123
+
+# 指定 PR URL
+claude --from-pr https://github.com/owner/repo/pull/456
+```
+
+## Shell 命令执行
+
+Claude Code 内置 Bash 工具，可以直接执行 Shell 命令：
 
 ```
-当前任务列表：
-- [✓] 分析需求
-- [→] 设计方案
-- [ ] 编写代码
-- [ ] 测试验证
+运行 npm test 检查测试是否通过
+```
+
+```
+执行 npm run build 构建项目
+```
+
+```
+运行 TypeScript 类型检查
+npx tsc --noEmit
+```
+
+```
+启动开发服务器
+npm run dev
+```
+
+```
+执行数据库迁移
+npm run db:migrate
+```
+
+### 权限分级
+
+| 操作类型 | 权限要求 | 示例 |
+|----------|----------|------|
+| 只读操作 | 自动执行 | `cat`, `ls`, `grep` |
+| 读操作（修改状态） | 自动执行 | `git status` |
+| 修改文件 | 需确认 | `echo > file`, `mv` |
+| 破坏性操作 | 明确确认 | `rm -rf`, `git reset --hard` |
+| 危险操作 | 需明确授权 | 网络请求、凭据操作 |
+
+### 执行权限模式
+
+```bash
+# 默认模式（危险操作需确认）
+claude
+
+# 自动接受所有编辑
+claude --permission-mode acceptEdits
+
+# 跳过所有权限检查（危险！）
+claude --dangerously-skip-permissions
+
+# 仅计划模式（不执行实际操作）
+claude --permission-mode plan
 ```
 
 ## 会话管理
 
-### 上下文查看
-
-```
-# 查看当前会话信息
-/info
-
-# 查看成本
-/cost
-
-# 查看已加载的文件列表
-/files
-```
-
-### 会话操作
-
-| 命令 | 作用 | 使用时机 |
-|------|------|----------|
-| `/clear` | 清空所有历史 | 开始全新任务 |
-| `/compact` | 压缩上下文，保留关键信息 | 任务里程碑 |
-| `/sessions` | 查看历史会话 | 回顾之前工作 |
-| `/resume <id>` | 恢复之前的会话 | 继续未完成任务 |
-
-### 会话恢复示例
+### 继续最近会话
 
 ```bash
-# 列出所有会话
-/sessions
-
-# 输出示例：
-# 2024-01-15 10:30: auth-feature (成本 $0.23)
-# 2024-01-14 16:20: bug-fix (成本 $0.08)
-
-# 恢复会话
-/resume auth-feature
+claude -c
+# 或
+claude --continue
 ```
 
-## 模型切换
+### 恢复指定会话
 
-### 手动切换
+```bash
+# 交互式选择（显示会话列表）
+claude -r
 
-```
-# 切换到 Sonnet（默认，性价比最高）
-/model sonnet
+# 指定会话名称
+claude -r auth-feature
 
-# 切换到 Opus（复杂推理任务）
-/model opus
+# 指定会话 UUID
+claude --session-id a74067fd-f453-454e-a66d-b4f86200b172
 
-# 切换到 Haiku（简单任务，最便宜）
-/model haiku
-```
-
-### 模型选择建议
-
-| 任务类型 | 推荐模型 | 原因 |
-|----------|----------|------|
-| 简单代码生成 | Haiku | 成本最低，速度快 |
-| 日常开发 | Sonnet | 平衡质量与成本 |
-| 架构设计、复杂重构 | Opus | 深度推理能力 |
-| 代码审查 | Haiku/Sonnet | 根据代码复杂度选择 |
-| 文档生成 | Haiku | 简单任务 |
-
-## 快捷键
-
-| 快捷键 | 功能 |
-|--------|------|
-| `Ctrl + C` | 取消当前操作 |
-| `Ctrl + D` | 退出 Claude Code |
-| `Ctrl + L` | 清屏 |
-| `↑ / ↓` | 浏览历史命令 |
-| `Tab` | 自动补全命令 |
-
-## 常见问题排查
-
-### Claude 不理解需求
-
-```
-# 提供更多上下文
-当前项目使用 React 18 和 TypeScript 5，
-我的需求是...
-
-# 分步引导
-第一步：先分析当前代码
-第二步：再提出方案
+# 恢复时创建新会话（不覆盖原会话）
+claude --resume --fork-session
 ```
 
-### 操作被拒绝
+### 查看会话成本
 
 ```
-# 查看拒绝原因
-Claude Code 会显示原因，如：
-- 需要确认危险操作
-- 文件路径不存在
-- 权限不足
-
-# 调整后重试
-使用更明确的文件路径，或确认操作
+/cost
 ```
 
-### 上下文过大
+```
+在会话中输入 /cost 查看当前会话的 API 成本和 Token 统计
+```
+
+### 压缩上下文
 
 ```
-# 手动压缩
 /compact
-
-# 清空重置
-/clear
-
-# 调整自动压缩阈值
-在 settings.json 中设置 CLAUDE_AUTOCOMPACT_PCT_OVERRIDE
 ```
 
-## 最佳实践总结
+在关键里程碑处执行 `/compact`，可保留关键上下文同时压缩旧对话，防止超出 Token 限制。
 
-1. **明确范围**：始终指定要操作的文件或目录
-2. **分步执行**：复杂任务拆解为多个简单请求
-3. **利用上下文**：引用之前的对话内容
-4. **及时压缩**：任务里程碑处执行 `/compact`
-5. **成本意识**：默认使用 Sonnet，简单任务用 Haiku
-6. **会话管理**：不同任务使用不同会话，避免混淆
+### 重置会话
 
-::: tip
-掌握基础使用后，建议阅读 [核心概念](/guide/concepts) 理解底层原理，以及 [性能优化](/guide/advanced/performance) 控制使用成本。
-:::
+```
+/clear
+```
+
+完全清空当前会话上下文，重新开始。
+
+## Slash 命令参考
+
+Slash 命令是在交互式会话中快速执行特定操作的快捷方式。
+
+### 已验证的命令
+
+| 命令 | 功能 | 示例 |
+|------|------|------|
+| `/cost` | 显示当前会话的 API 成本和 Token 使用统计 | `/cost` |
+| `/compact` | 压缩上下文，保留关键信息 | `/compact` |
+| `/model <model>` | 切换当前会话的模型 | `/model sonnet` |
+| `/agent <name>` | 切换当前会话的 Agent | `/agent review` |
+
+### 会话控制命令
+
+| 命令 | 功能 |
+|------|------|
+| `/clear` | 清空会话上下文，重新开始 |
+| `/exit` | 退出当前会话 |
+| `/new` | 开始新会话（保留当前） |
+
+### 任务命令
+
+| 命令 | 功能 |
+|------|------|
+| `/plan` | 进入计划模式，分析任务并制定步骤 |
+| `/test` | 运行测试 |
+| `/commit` | 提交当前更改 |
+| `/simplify` | 简化代码 |
+| `/review-pr` | 审查 Pull Request |
+
+### 集成命令
+
+| 命令 | 功能 |
+|------|------|
+| `/web-search` | 执行网络搜索 |
+| `/loop` | 设置循环任务 |
+| `/fast` | 启用快速模式 |
+| `/memory` | 管理记忆 |
+
+> **注意**：部分 slash 命令可能需要对应的插件或配置。首次使用陌生命令时，留意 Claude 的反馈。
+
+## 输出控制
+
+### 模型切换
+
+```bash
+# 会话中切换
+/model sonnet    # 使用 Sonnet 4
+/model opus      # 使用 Opus 4
+/model haiku     # 使用 Haiku 4
+
+# 命令行指定
+claude --model sonnet
+```
+
+### 输出格式
+
+```bash
+# 纯文本（默认）
+claude -p "解释这段代码"
+
+# JSON 格式
+claude -p --output-format json "返回用户对象"
+
+# 流式 JSON（实时输出）
+claude -p --output-format stream-json "实现一个函数"
+```
+
+### 结构化输出
+
+```bash
+# 使用 JSON Schema 验证输出
+claude -p --json-schema '{
+  "type": "object",
+  "properties": {
+    "name": { "type": "string" },
+    "age": { "type": "number" }
+  },
+  "required": ["name"]
+}' "返回一个用户对象"
+```
+
+## 管道与脚本集成
+
+### 管道输入
+
+```bash
+# 将代码通过管道传给 Claude
+cat src/utils.ts | claude -p "审查这段代码的质量"
+
+# 将 Diff 传给 Claude
+git diff | claude -p "审查这些代码变更"
+
+# 将测试输出传给 Claude
+npm test 2>&1 | claude -p "分析这些测试失败的原因"
+```
+
+### 脚本集成
+
+```bash
+#!/bin/bash
+# 自动化代码审查脚本
+
+echo "=== Claude Code 自动化审查 ==="
+echo ""
+
+# 审查 PR diff
+git fetch origin main
+git diff origin/main...HEAD > /tmp/pr.diff
+
+claude -p --output-format json "审查以下 diff，识别潜在问题：
+$(cat /tmp/pr.diff)" > /tmp/review.json
+
+echo "审查完成，结果保存在 /tmp/review.json"
+```
+
+### CI/CD 集成
+
+```bash
+# 在 CI 中运行 Claude
+claude -p \
+  --permission-mode acceptEdits \
+  --no-session-persistence \
+  --max-budget-usd 0.10 \
+  "运行测试并修复失败的用例"
+```
+
+## 工具使用策略
+
+### 何时描述，何时指定
+
+```
+✅ 描述意图（推荐）：
+  "给这个组件添加 loading 状态"
+
+✅ 指定操作：
+  "在 src/components/Button.tsx 的第 20 行后添加：
+  const [loading, setLoading] = useState(false);"
+
+✅ 指定文件+意图：
+  "修改 src/api/users.ts，使用 fetch 替代 axios"
+```
+
+### 读取 vs 修改
+
+```
+读取操作：描述想看什么
+  "查看 src/auth 的目录结构"
+  "找到 src 中处理文件上传的所有代码"
+  "查看 package.json 中的依赖"
+
+修改操作：描述期望结果
+  "将所有 .js 文件重命名为 .ts"
+  "给 UserService 类添加 getUserById 方法"
+```
+
+### 错误处理
+
+```
+这个修改导致了 TypeScript 错误，请修复
+```
+
+```
+运行 tsc --noEmit 看看有什么错误
+```
+
+```
+上一条命令报错了，错误信息是：...
+```
+
+## 常见工作流
+
+### 工作流 1：实现新功能
+
+```
+1. 启动 Claude：
+   claude
+
+2. 描述需求：
+   "实现用户注册功能，包含邮箱验证和密码强度校验"
+
+3. Claude 规划并实现
+
+4. 测试：
+   "运行测试确认功能正常"
+
+5. 提交：
+   "提交这些更改"
+```
+
+### 工作流 2：代码重构
+
+```
+1. claude --effort high
+   （重构需要高投入）
+
+2. "分析当前 src/api/ 目录的代码结构，找出重复模式"
+
+3. 根据分析结果：
+   "将重复的 API 调用抽象为通用 Hook"
+
+4. 验证：
+   "运行所有测试确认重构没有破坏功能"
+
+5. 审查：
+   "执行 /simplify 简化生成的代码"
+```
+
+### 工作流 3：Bug 修复
+
+```
+1. claude -c
+   （继续之前的会话，或开启新会话）
+
+2. "修复 src/utils/date.ts 中的时区问题"
+
+3. "先复现问题：运行 npm test -- --grep timezone"
+
+4. 根据测试结果：
+   "问题已定位，在 formatDate 函数中缺少时区转换"
+
+5. 修复后验证：
+   "再次运行测试确认修复有效"
+```
+
+### 工作流 4：Code Review
+
+```bash
+# 从 PR 启动
+claude --from-pr 123 --agent review
+
+# 或启动审查 Agent
+claude --agents '{
+  "review": {
+    "description": "代码审查",
+    "prompt": "你是代码审查专家..."
+  }
+}' --agent review
+
+# 然后描述审查范围
+请审查 src/auth/ 目录下所有文件的代码质量
+```
+
+## MCP 工具使用
+
+如果已配置 MCP 服务器，可以直接使用外部服务：
+
+```
+使用 GitHub MCP 创建 Issue：
+标题：优化 API 响应时间
+标签：performance, enhancement
+```
+
+```
+使用 Postgres MCP 查询数据：
+SELECT * FROM users WHERE created_at > NOW() - INTERVAL '7 days'
+```
+
+详见 [MCP 集成](/guide/mcp) 章节。
