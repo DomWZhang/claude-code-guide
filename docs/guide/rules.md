@@ -1,616 +1,475 @@
-# Rules
+# Rules 规则系统
 
-Rules 是 Claude Code 中的规则系统，用于定义项目的编码规范、行为准则和工作流程。
+Rules 是 Claude Code 的行为约束系统，通过 `CLAUDE.md` 文件定义项目级规则，确保 Claude 在整个会话中遵循一致的标准。
 
-## 什么是 Rules？
+## 核心概念
 
-Rules 是一组定义在 `CLAUDE.md` 文件中的指令，告诉 Claude Code：
-- 如何编写代码
-- 遵循什么规范
-- 如何处理特定情况
-- 项目的特殊要求
+Claude Code 会按以下顺序加载配置（优先级从低到高）：
 
 ```
-CLAUDE.md
+~/.claude/settings.json       （全局用户设置）
     ↓
-Claude Code 加载规则
+~/.claude/rules/               （用户级规则目录）
     ↓
-每次对话应用规则
+<project>/CLAUDE.md            （项目规则 — 最高优先级）
     ↓
-生成符合规范的代码
+<project>/.claude/             （项目特定配置）
 ```
 
-## Rules 文件结构
+`CLAUDE.md` 是规则系统的核心，它同时承担**项目文档**和**行为指令**双重职责。
 
-### 基础结构
+## CLAUDE.md 文件结构
+
+一个完整的 `CLAUDE.md` 分为两大部分：
+
+```
+┌─────────────────────────────────────────────┐
+│  第一部分：项目文档（面向人类）                │
+│  — 项目介绍、技术栈、目录结构、常用命令         │
+│  — Claude 和开发者都可以阅读                  │
+└─────────────────────────────────────────────┘
+│  （使用 --- 分隔）                            │
+├─────────────────────────────────────────────┤
+│  第二部分：[default] 指令（面向 Claude）        │
+│  — role: 角色定义                           │
+│  — expertise: 专业领域                        │
+│  — workingStyle: 工作风格偏好                 │
+│  — rules: 具体规则列表                        │
+└─────────────────────────────────────────────┘
+```
+
+### 实际示例
+
+以下是一个真实的 `CLAUDE.md`：
 
 ```markdown
-# Project Name
-
-[default]
-# 默认规则 - 所有 Agent 都要遵守
-
-[rules]
-# 详细规则定义
-
-[specialist:xxx]
-# 特定 Agent 的规则
-```
-
-### 完整示例
-
-```markdown
-# MyAwesomeProject
+# MyProject
 
 ## 项目概述
-这是一个现代化的 React + TypeScript 项目。
+
+一个使用 Next.js 14 和 TypeScript 构建的 SaaS 平台。
 
 ## 技术栈
-- React 18
+
+- Next.js 14 (App Router)
 - TypeScript 5
-- Vite
+- PostgreSQL + Prisma
 - Tailwind CSS
+- NextAuth.js
 
----
+## 项目结构
 
-[default]
-
-# 代码规范
-codeStandards:
-  language: TypeScript
-  strictMode: true
-  prettier: true
-
-# 文件组织
-fileOrganization:
-  components: src/components
-  hooks: src/hooks
-  utils: src/utils
-  types: src/types
-
----
-
-[rules]
-
-## 代码风格
-
-### 命名规范
-- 组件: PascalCase (UserCard.tsx)
-- Hooks: camelCase 前缀 use (useUser.ts)
-- 工具函数: camelCase (formatDate.ts)
-- 常量: UPPER_SNAKE_CASE
-- 类型/接口: PascalCase (UserProfile)
-
-### 代码格式
-- 使用 2 空格缩进
-- 每行最多 100 字符
-- 字符串使用单引号
-- 末尾添加分号
-
-### TypeScript 规范
-- 启用 strict 模式
-- 避免使用 any
-- 使用 interface 定义对象类型
-- 使用 type 定义联合类型
-
-## 组件规范
-
-### 组件结构
-```tsx
-interface Props {
-  title: string
-  onClick: () => void
-}
-
-export function Button({ title, onClick }: Props) {
-  return (
-    <button onClick={onClick}>
-      {title}
-    </button>
-  )
-}
 ```
-
-### Hooks 规范
-- 自定义 Hook 必须以 `use` 开头
-- 每个 Hook 只做一件事
-- 在 Hook 顶部声明所有 state
-
----
-
-[specialist:frontend]
-
-## 前端特定规则
-- 使用函数组件和 Hooks
-- 组件文件最多 200 行
-- 提取可复用的逻辑到 Hooks
-- 使用 CSS Modules 或 Tailwind
-
----
-
-[specialist:reviewer]
-
-## 审查规则
-- 检查命名规范
-- 检查类型安全
-- 检查性能影响
-- 检查可访问性
-```
-
-## Rules 类型
-
-### 1. 代码风格规则
-
-```markdown
-[rules:code-style]
-
-## 缩进
-indent: 2 spaces
-
-## 引号
-quotes: single
-
-## 分号
-semicolons: required
-
-## 换行
-lineLength: 100
-```
-
-### 2. 技术规范规则
-
-```markdown
-[rules:tech-specs]
-
-## TypeScript
-typescript:
-  strict: true
-  noImplicitAny: true
-  strictNullChecks: true
-
-## React
-react:
-  version: 18
-  hooksOnly: true
-  fileExtensions: [.tsx, .jsx]
-
-## CSS
-css:
-  methodology: BEM
-  preprocessor: Tailwind
-```
-
-### 3. 项目结构规则
-
-```markdown
-[rules:structure]
-
 src/
-├── components/    # UI 组件
-│   ├── common/    # 通用组件
-│   └── features/  # 特性组件
-├── hooks/         # 自定义 Hooks
-├── utils/         # 工具函数
-├── types/         # 类型定义
-├── api/           # API 调用
-└── pages/         # 页面组件
+├── app/              # App Router 页面
+│   ├── (auth)/       # 认证相关页面
+│   └── (dashboard)/  # 仪表盘页面
+├── components/       # React 组件
+├── lib/             # 工具函数和库
+├── db/              # Prisma schema 和迁移
+└── types/           # TypeScript 类型定义
 ```
 
-### 4. Git 工作流规则
+## 常用命令
+
+- `npm run dev` — 开发服务器
+- `npm run build` — 生产构建
+- `npm run lint` — ESLint 检查
+- `npx prisma db push` — 同步数据库 schema
+
+---
+
+[default]
+
+role: Next.js 全栈工程师，熟悉 TypeScript、Prisma 和 Tailwind
+expertise:
+  - Next.js 14 App Router 和服务端组件
+  - TypeScript 严格模式
+  - Prisma ORM 和 PostgreSQL
+  - Tailwind CSS 响应式设计
+  - 安全性最佳实践（OWASP Top 10）
+
+workingStyle:
+  - 先规划后实现，使用 /plan 确认方案
+  - 优先使用 TypeScript 严格类型，避免 any
+  - 组件文件不超过 150 行，超出则拆分
+  - 每次修改后运行 lint 和类型检查
+
+rules:
+  - 所有 API Route 必须有错误处理和类型定义
+  - 禁止在客户端组件中直接访问数据库，使用 API Route
+  - 使用环境变量处理所有敏感配置
+  - 遵循 Next.js Image 组件规范优化图片
+  - 登录/注册页面必须使用服务端组件
+```
+
+## [default] 指令详解
+
+### role — 角色定义
+
+定义 Claude 的角色定位，帮助它选择合适的视角和措辞：
 
 ```markdown
-[rules:git]
-
-## Commit 规范
-commitFormat: |
-  <type>(<scope>): <subject>
-
-  <body>
-
-  <footer>
-
-types:
-  - feat: 新功能
-  - fix: 修复 bug
-  - docs: 文档更新
-  - style: 代码格式
-  - refactor: 重构
-  - test: 测试
-  - chore: 构建/工具
-
-## Branch 规范
-branchNaming: |
-  <type>/<issue-number>-<description>
-
-examples:
-  - feature/123-add-user-login
-  - fix/456-resolve-auth-error
-  - hotfix/789-critical-security
+role: 全栈 TypeScript 开发者，10 年经验
 ```
 
-### 5. 测试规则
+**最佳实践**：
+- 包含技术栈关键词
+- 说明经验水平
+- 包含工作风格关键词（如"优先测试"、"TDD"）
+
+### expertise — 专业领域
+
+列出 Claude 应该重点关注的知识领域。当涉及这些领域时，Claude 会更深入地分析：
 
 ```markdown
-[rules:testing]
-
-## 测试要求
-- 所有新功能必须有测试
-- 测试覆盖率 > 80%
-- 单元测试覆盖核心逻辑
-- 集成测试覆盖关键流程
-
-## 测试文件位置
-tests/
-├── unit/          # 单元测试
-├── integration/   # 集成测试
-└── e2e/          # E2E 测试
-
-## 测试命名
-testNaming: |
-  describe(<模块>)
-    it(<操作> <预期结果>)
+expertise:
+  - React 18 和 TypeScript
+  - PostgreSQL 数据库设计
+  - RESTful API 设计
+  - 单元测试和集成测试
+  - Git Flow 工作流
 ```
 
-### 6. 安全规则
+### workingStyle — 工作风格
+
+定义 Claude 的工作行为偏好：
 
 ```markdown
-[rules:security]
-
-## 敏感信息
-- 禁止硬编码密钥
-- 使用环境变量
-- .env 不提交到 Git
-
-## 依赖安全
-- 定期更新依赖
-- 检查已知漏洞
-- 使用官方包
-
-## 输入验证
-- 验证所有用户输入
-- 防止 SQL 注入
-- 防止 XSS 攻击
+workingStyle:
+  - 每次修改前先说明意图
+  - 使用 TypeScript 严格类型
+  - 代码遵循 ESLint 和 Prettier 规则
+  - 优先使用函数式编程风格
+  - 复杂逻辑添加注释解释
 ```
 
-## Rules 语法
+### rules — 具体规则列表
 
-### 基本语法
+这是最核心的部分，定义 Claude **必须遵守**的规则：
 
 ```markdown
-# 单行规则
-ruleName: value
-
-# 多行规则
-ruleName: |
-  line 1
-  line 2
-  line 3
-
-# 列表
-ruleList:
-  - item1
-  - item2
-  - item3
-
-# 对象
-ruleObject:
-  key1: value1
-  key2: value2
+rules:
+  - 所有 API 必须有输入验证（使用 zod）
+  - 禁止使用 var，仅使用 const 和 let
+  - 组件必须提供 TypeScript 接口
+  - 测试覆盖率低于 80% 不允许合并
+  - 所有敏感操作记录审计日志
+  - API 错误返回统一格式：{ error: string, code: string }
 ```
 
-### 条件规则
+## 高级配置
+
+### 分级规则（Everything Claude Code）
+
+[Everything Claude Code](/guide/ecosystem/everything-claude-code) 提供了分级规则架构，将规则按语言和通用性分类：
+
+```
+~/.claude/rules/
+├── common/           # 通用规则（所有语言适用）
+│   ├── coding-style.md
+│   ├── git-workflow.md
+│   ├── testing.md
+│   └── security.md
+├── typescript/       # TypeScript 专项规则
+│   ├── types.md
+│   ├── patterns.md
+│   └── testing.md
+├── python/           # Python 专项规则
+│   ├── pep8.md
+│   ├── type-hints.md
+│   └── testing.md
+└── golang/           # Go 专项规则
+    ├── conventions.md
+    └── testing.md
+```
+
+**common/testing.md 示例**：
 
 ```markdown
-[rules]
+## 测试规范
 
-## 当使用 React 时
-when:
-  framework: react
-then:
-  - 使用函数组件
-  - 使用 Hooks
-  - 组件文件 .tsx
+### 覆盖率目标
+- 新功能测试覆盖率 ≥ 80%
+- 核心业务逻辑测试覆盖率 ≥ 95%
+- API endpoint 全覆盖
 
-## 当使用 Python 时
-when:
-  language: python
-then:
-  - 使用类型提示
-  - 遵循 PEP 8
-  - 使用 dataclasses
+### 测试文件命名
+- 单元测试：`*.test.ts`
+- 集成测试：`*.integration.test.ts`
+- E2E 测试：`e2e/*.spec.ts`
+
+### 测试原则
+1. 每个 public 函数必须有测试
+2. 测试名称必须描述预期行为
+3. 使用 Given-When-Then 结构组织测试
+4. Mock 外部依赖，不 Mock 同模块内部函数
 ```
 
-### 优先级
+### 项目级规则覆盖
+
+在项目 `CLAUDE.md` 中可以覆盖用户级规则：
+
+```markdown
+# .claude/rules/nodejs-testing.md（用户级）
+
+rules:
+  - 测试覆盖率目标 70%
+```
+
+```markdown
+# 项目 CLAUDE.md（项目级）
+
+[default]
+
+rules:
+  # 覆盖用户级规则，提高标准
+  - 测试覆盖率目标 85%
+  - 每次提交前必须运行完整测试套件
+```
+
+## 实战规则模板
+
+### TypeScript + React 项目
 
 ```markdown
 [default]
-# 最低优先级
-priority: 1
 
-[specialist:xxx]
-# 中等优先级
-priority: 2
+role: TypeScript + React 专家，熟悉函数式编程和响应式设计
+expertise:
+  - React 18 和函数式组件
+  - TypeScript 4.9+ 严格模式
+  - 状态管理（Zustand / Jotai）
+  - 组件库开发
 
-[rules:critical]
-# 最高优先级
-priority: 3
+workingStyle:
+  - 组件优先设计 TypeScript 接口
+  - 使用组合模式而非继承
+  - 优先使用 hooks 封装逻辑
+
+rules:
+  # 类型安全
+  - 禁止使用 any，优先使用 unknown + 类型守卫
+  - 所有组件 Props 必须定义接口
+  - API 响应必须定义类型
+
+  # 代码组织
+  - React 组件放在 src/components/
+  - 自定义 Hook 放在 src/hooks/
+  - 工具函数放在 src/utils/
+  - 类型定义放在 src/types/
+
+  # 组件规范
+  - 使用函数组件，禁止使用 class 组件
+  - 组件最多 200 行，超出则拆分
+  - Props 接口名称 = 组件名称 + Props
+  - 条件渲染使用 && 或三元表达式，避免嵌套
+
+  # 测试
+  - 组件必须有对应的 .test.tsx 文件
+  - Hook 必须有对应的 .test.ts 文件
+  - 测试关键用户交互路径
 ```
 
-## Rules 应用场景
-
-### 1. 新项目初始化
+### Python FastAPI 项目
 
 ```markdown
-[rules:project-init]
-
-## 新项目必须包含
-requiredFiles:
-  - README.md
-  - LICENSE
-  - .gitignore
-  - package.json
-  - tsconfig.json
-
-## 初始配置
-- 设置 ESLint
-- 设置 Prettier
-- 设置 CI/CD
-- 配置 Git hooks
-```
-
-### 2. 代码审查规则
-
-```markdown
-[rules:code-review]
-
-## 必须检查
-- [ ] 类型正确性
-- [ ] 错误处理
-- [ ] 性能影响
-- [ ] 安全性
-- [ ] 可测试性
-
-## 评分标准
-- 命名清晰度: 20%
-- 代码简洁度: 20%
-- 逻辑完整性: 20%
-- 测试覆盖度: 20%
-- 文档完整性: 20%
-```
-
-### 3. API 开发规则
-
-```markdown
-[rules:api]
-
-## RESTful 规范
-restGuidelines:
-  - 使用标准 HTTP 方法
-  - 使用名词而非动词
-  - 适当的 HTTP 状态码
-  - 版本控制 /api/v1/
-
-## 响应格式
-responseFormat: |
-  {
-    "success": boolean,
-    "data": object,
-    "error": {
-      "code": string,
-      "message": string
-    }
-  }
-
-## 错误码
-errorCodes:
-  400: Bad Request
-  401: Unauthorized
-  403: Forbidden
-  404: Not Found
-  500: Internal Server Error
-```
-
-### 4. 数据库规则
-
-```markdown
-[rules:database]
-
-## 表命名
-tableNaming: snake_case
-
-## 字段命名
-fieldNaming: snake_case
-
-## 主键
-primaryKey: id (UUID)
-
-## 时间戳
-timestamps:
-  createdAt: created_at
-  updatedAt: updated_at
-
-## 软删除
-softDelete: true
-deletedAt: deleted_at
-```
-
-## Rules 继承
-
-### 全局规则
-
-在 `~/.claude/defaults.md` 中定义全局规则：
-
-```markdown
-# 全局默认规则
 [default]
 
-## 通用代码规范
-- 使用 UTF-8 编码
-- 文件末尾换行
-- 移除未使用的导入
+role: Python FastAPI 后端工程师，熟悉异步编程和数据库设计
+expertise:
+  - FastAPI 和 Pydantic
+  - PostgreSQL + SQLAlchemy (async)
+  - JWT 认证和 OAuth2
+  - RESTful API 设计
+  - Python type hints
+
+workingStyle:
+  - 使用 async/await 处理 I/O 操作
+  - Pydantic 模型用于所有数据验证
+  - 统一错误处理和日志记录
+
+rules:
+  # 类型提示
+  - 所有函数必须有类型注解
+  - 使用 Union 而非 Optional（除非明确是可选值）
+  - 使用 dataclass 或 Pydantic BaseModel 管理复杂对象
+
+  # API 设计
+  - 使用 HTTP 状态码标准（200/201/400/401/403/404/500）
+  - 错误响应格式：{"detail": "错误描述", "code": "ERROR_CODE"}
+  - 所有端点必须有 OpenAPI 文档注释
+
+  # 数据库
+  - 使用异步 session（async_sessionmaker）
+  - 查询后立即 close 或使用 context manager
+  - 敏感字段（密码等）永远不在响应中返回
+
+  # 安全
+  - 密码必须 bcrypt 哈希存储
+  - JWT token 设置合理的过期时间
+  - 所有输入必须验证（使用 Pydantic）
 ```
 
-### 项目规则
-
-在项目 `CLAUDE.md` 中覆盖：
+### Go 项目
 
 ```markdown
-# 项目特定规则
 [default]
 
-## 覆盖全局设置
-lineLength: 120
+role: Go 后端工程师，遵循 Go 哲学和惯用写法
+expertise:
+  - Go 1.21+ 标准库和工具链
+  - 结构和错误处理
+  - 并发模式（goroutine / channel）
+  - RESTful API 和中间件
+
+workingStyle:
+  - 遵循 Go 官方 effective go 规范
+  - 错误作为返回值，不使用 panic
+  - 接口设计符合小接口原则
+
+rules:
+  # 代码风格
+  - 遵循 gofmt 自动格式化
+  - 变量命名遵循 Google Go 风格指南
+  - 注释必须符合 godoc 规范
+  - 每个包导出内容必须有文档注释
+
+  # 错误处理
+  - 错误始终返回，不忽略（使用 _ 忽略的场景需注释说明）
+  - 自定义错误使用 errors.New 或 fmt.Errorf
+  - 错误链包含上下文（使用 %w）
+
+  # 项目结构
+  - 遵循 standard Go project layout
+  - cmd/ 放入口点，pkg/ 放可复用代码
+  - internal/ 放项目私有代码
+
+  # 测试
+  - 使用标准库 testing 包
+  - 测试文件命名为 *_test.go
+  - 表驱动测试用于多个相似场景
 ```
 
-### 结果
+## 规则设计原则
+
+### 1. 具体而非抽象
 
 ```
-全局规则 (80%)
-    ↓
-项目规则 (100%)
-    ↓
-最终应用
+❌ 遵循最佳实践
+✅ 使用 TypeScript 严格模式，所有变量必须标注类型
 ```
 
-## Rules 调试
+```
+❌ 代码要清晰
+✅ 函数名使用动词或动宾短语（getUserById, validateEmail）
+  变量名使用名词或形容词（user, isValid, userList）
+```
 
-### 查看应用的规则
+### 2. 包含「为什么」
 
 ```
+# 好规则 — 包含理由
+rules:
+  - 禁止在循环中发起 HTTP 请求（性能：每次请求有 ~100ms 延迟）
+  - 所有外部 API 调用必须设置 10 秒超时（防止无限等待）
+  - 使用参数化查询而非字符串拼接（安全：防止 SQL 注入）
+
+# 差规则 — 缺乏上下文
+rules:
+  - 优化性能
+  - 设置超时
+  - 注意安全
+```
+
+### 3. 适度数量
+
+每个 `CLAUDE.md` 的 `rules` 部分建议控制在 **5-10 条**：
+
+- 太少（< 5）：可能遗漏关键规范
+- 适度（5-10）：最容易记忆和执行
+- 太多（> 15）：Claude 可能无法全部遵守，项目维护成本高
+
+如果规则很多，按类别分组：
+```markdown
+rules:
+  # 代码质量
+  - ...
+
+  # 安全
+  - ...
+
+  # Git 工作流
+  - ...
+```
+
+### 4. 可验证
+
+让规则可以被验证：
+
+```
+❌ 代码要写得优雅
+✅ 每个函数不超过 50 行（可数）
+✅ Cyclomatic complexity < 10（可测）
+
+❌ 要注意代码复用
+✅ 重复超过 3 次的代码必须提取为函数（可检查）
+```
+
+## Rules 与其他系统的关系
+
+| 系统 | 作用 | 生效时机 | 示例 |
+|------|------|---------|------|
+| **Rules** | 约束行为 | 生成代码时 | 「使用 TypeScript 严格模式」 |
+| **Hooks** | 执行动作 | 事件触发时 | 自动格式化、权限检查 |
+| **Agents** | 任务委托 | 复杂任务时 | 委托给代码审查 Agent |
+| **Memory** | 持久化上下文 | 跨会话时 | 记住项目特殊配置 |
+
+```
+Rules 定义「做什么」和「怎么做」
+Hooks 定义「在什么时机做什么额外动作」
+Agents 定义「什么任务委托给谁」
+Memory 定义「什么信息需要记住」
+```
+
+## 查看当前应用的规则
+
+```bash
 /rules
 ```
 
-Claude Code 会显示当前加载的所有规则。
+Claude Code 会显示当前会话加载的所有规则来源和内容。
 
-### 测试规则
+## 与 Everything Claude Code 的集成
 
-```
-按照规则审查 src/auth/login.ts
-```
+ECC 的分级规则系统会自动合并到项目规则中：
 
-### 临时覆盖
+```bash
+# 查看所有活动的规则
+# ECC 会自动加载 rules/common/*.md 和 rules/<language>/*.md
 
-```
-暂时忽略 TypeScript strict 模式，完成任务后恢复
-```
-
-## Rules 最佳实践
-
-### 1. 保持简洁
-
-```
-✅ 清晰简洁的规则
-❌ 过于复杂的规则
+# 强制重新加载规则
+# 在新会话开始时生效
 ```
 
-### 2. 具体明确
+## 常见问题
 
-```
-✅ 当创建 React 组件时，使用函数组件
-❌ 遵循最佳实践
-```
+**Q: 规则太多了应该怎么组织？**
 
-### 3. 提供示例
+A: 将通用规则放在 `~/.claude/rules/`，项目特定规则放在 `CLAUDE.md` 中。ECC 用户可以利用其分级规则系统。
 
-```markdown
-## 命名规范
-✅ 正确示例: `getUserById`, `UserCard`
-❌ 错误示例: `getData`, `Component1`
-```
+**Q: 规则和 Git Hooks 冲突了怎么办？**
 
-### 4. 定期更新
+A: Rules 是给 Claude 的指令，Git Hooks 是给 Git 的指令。两者互补。Claude Code 会尝试遵守规则，但如果项目 Git Hooks 失败（lint、test），会阻止提交。
 
-```markdown
-# 每季度审查一次规则
-# 根据项目变化调整
-# 移除不适用的规则
-```
+**Q: 临时忽略某些规则？**
 
-### 5. 分类组织
+A: 可以直接告诉 Claude「这次忽略某某规则」，但建议说明原因。
 
-```markdown
-[rules:code-style]      # 代码风格
-[rules:testing]         # 测试规范
-[rules:security]        # 安全规范
-[rules:git]             # Git 规范
-[rules:performance]      # 性能规范
-```
+**Q: 如何让规则对团队成员生效？**
 
-## Rules 与其他系统
+A: 将 `CLAUDE.md` 提交到版本控制，团队成员克隆仓库后自动获得相同规则。
 
-### Rules vs Hooks
-
-| 特性 | Rules | Hooks |
-|------|-------|-------|
-| 执行时机 | 生成代码时 | 操作前后 |
-| 作用 | 定义规范 | 执行动作 |
-| 示例 | 命名规范 | 自动格式化 |
-
-### Rules vs Agents
-
-| 特性 | Rules | Agents |
-|------|-------|--------|
-| 作用域 | 全局 | 特定任务 |
-| 粒度 | 细粒度 | 粗粒度 |
-| 组合 | 多个 Rules | 单个 Agent |
-
-## 常用 Rules 模板
-
-### React 项目
-
-```markdown
-[rules:react]
-
-## 组件规则
-- 使用函数组件
-- 使用 Hooks 管理状态
-- PropTypes 或 TypeScript
-- 组件文件最多 200 行
-
-## 目录结构
-src/
-├── components/
-├── hooks/
-├── utils/
-├── types/
-├── api/
-└── pages/
-```
-
-### Node.js 项目
-
-```markdown
-[rules:nodejs]
-
-## Express 规则
-- 使用中间件模式
-- 错误中间件放最后
-- 使用 async/await
-- 统一错误处理
-
-## 模块结构
-module.exports = {
-  // 导出内容
-}
-```
-
-### Python 项目
-
-```markdown
-[rules:python]
-
-## PEP 8 规范
-- 4 空格缩进
-- 行长度 79 字符
-- 使用 type hints
-- docstring 文档
-
-## Django 规则
-- 使用 CBV
-- Model 命名单数
-- 命名空间隔离
-```
-
-::: tip 实践建议
-Rules 是确保代码一致性的关键。建议从简单的规则开始，逐步完善，避免一开始就定义过于复杂的规则。
+::: tip 规则是起点，不是终点
+好的规则不是一次性写完的。随着项目发展，定期回顾 `CLAUDE.md`，添加新学到的教训，删除不适用的规则。建议每个季度审查一次。
 :::
